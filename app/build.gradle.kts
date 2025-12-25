@@ -53,6 +53,18 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.7.7")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
+
+    implementation("androidx.camera:camera-core:1.3.2")
+    implementation("androidx.camera:camera-camera2:1.3.2")
+    implementation("androidx.camera:camera-lifecycle:1.3.2")
+    implementation("androidx.camera:camera-view:1.3.2")
+    // ML Kit (För att läsa streckkoder)
+    implementation("com.google.mlkit:barcode-scanning:17.2.0")
+    // För att hantera permissions i Compose
+    implementation("com.google.accompanist:accompanist-permissions:0.34.0")
+    // OBS: Om accompanist krånglar kan vi köra standard ActivityResultLauncher,
+    // men jag visar den enkla vägen nedan utan accompanist för att hålla dependencies nere.
+
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
