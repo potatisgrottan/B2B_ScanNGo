@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.util.Log
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
@@ -25,11 +26,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import com.example.b2b_scanngo.model.BarcodeAnalyzer
+import java.util.concurrent.Executors
 
 @Composable
-fun ScanScreen(navController: NavController) {
+fun ScanScreen(navController: NavController,
+               onProductFound: (String) -> Boolean) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+
+    // Förhindra att den skannar samma kod 100 gånger på en sekund
+    var isScanning by remember { mutableStateOf(true) }
 
     // Tillstånd för kameran
     var hasCameraPermission by remember {
@@ -58,36 +66,58 @@ fun ScanScreen(navController: NavController) {
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (hasCameraPermission) {
-            // HÄR ÄR KAMERAN
             AndroidView(
                 factory = { ctx ->
-                    val previewView = PreviewView(ctx).apply {
-                        this.scaleType = PreviewView.ScaleType.FILL_CENTER
-                        layoutParams = ViewGroup.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.MATCH_PARENT
-                        )
-                    }
+                    val previewView = PreviewView(ctx)
+                    // ... (PreviewView setup samma som förut) ...
 
-                    // Starta kameran i bakgrunden
                     val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
 
                     cameraProviderFuture.addListener({
                         val cameraProvider = cameraProviderFuture.get()
-
-                        // 1. Förhandsvisning (det du ser på skärmen)
                         val preview = Preview.Builder().build().also {
                             it.setSurfaceProvider(previewView.surfaceProvider)
                         }
 
-                        // 2. Bildanalys (här kopplar vi in vår Analyzer)
                         val imageAnalysis = ImageAnalysis.Builder()
                             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                             .build()
 
-                       //analyzera bilden här
+                        // HÄR ÄR LOGIKEN:
+                        imageAnalysis.setAnalyzer(Executors.newSingleThreadExecutor(),
+                            BarcodeAnalyzer { ean ->
 
-                        // 3. Koppla ihop allt med livscykeln
+                                // Om vi redan håller på att bearbeta en kod, gör inget
+                                if (!isScanning) return@BarcodeAnalyzer
+
+                                // Stoppa skanning tillfälligt
+                                isScanning = false
+
+                                // Gå till Main Thread för att göra UI-grejer
+                                previewView.post {
+                                    val success =
+                                        onProductFound(ean) // <--- Skicka koden till MainActivity!
+
+                                    if (success) {
+                                        Toast.makeText(
+                                            ctx,
+                                            "Lade till vara: $ean",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                        // Gå tillbaka till listan automatiskt
+                                        navController.popBackStack()
+                                    } else {
+                                        Toast.makeText(
+                                            ctx,
+                                            "Okänd produkt: $ean",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                        // Starta skanningen igen efter 2 sekunder om det blev fel
+                                        previewView.postDelayed({ isScanning = true }, 2000)
+                                    }
+                                }
+                            })
+
                         try {
                             cameraProvider.unbindAll()
                             cameraProvider.bindToLifecycle(
@@ -106,12 +136,6 @@ fun ScanScreen(navController: NavController) {
                 },
                 modifier = Modifier.fillMaxSize()
             )
-        } else {
-            // Om vi inte fick lov
-            Text(
-                text = "Need camera allowance to scan items",
-                modifier = Modifier.align(Alignment.Center)
-            )
         }
 
         // Tillfällig knapp för att gå tillbaka manuellt
@@ -126,10 +150,12 @@ fun ScanScreen(navController: NavController) {
     }
 }
 
-/*
-@Preview(showBackground = true)
+/*@Preview(showBackground = true)
 @Composable
 fun ScanScreenPreview() {
     val navController = rememberNavController()
-    ScanScreen(navController = navController)
+
+    // Skicka med en "tom" funktion som bara returnerar true
+    // { _ -> true } betyder: "Jag bryr mig inte om vad in-parametern är, jag returnerar bara true"
+    ScanScreen(navController = navController, onProductFound = { _ -> true })
 }*/

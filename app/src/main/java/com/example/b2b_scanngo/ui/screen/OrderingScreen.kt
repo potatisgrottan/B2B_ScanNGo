@@ -15,15 +15,11 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.b2b_scanngo.model.CartItem
+import com.example.b2b_scanngo.repositroy.FakeProductRepo
 
 @Composable
-fun OrderScreen(navController: NavController) {
-    // Mock-data
-    val cartItems = remember { mutableStateListOf(
-        CartItem("Krossade Tomater", "73123456", 5),
-        CartItem("Olivolja 1L", "73999999", 1),
-        CartItem("Pasta Penne 5kg", "73555555", 2)
-    )}
+fun OrderScreen(navController: NavController,
+                cartItems: MutableList<CartItem>) {
 
     Column(modifier = Modifier.fillMaxSize()) {
         Text(
@@ -94,10 +90,16 @@ fun CartItemRow(item: CartItem) {
         }
     }
 }
-
 @Preview(showBackground = true)
 @Composable
 fun OrderScreenPreview() {
     val navController = rememberNavController()
-    OrderScreen(navController = navController)
+
+    // Skapa en fejk-lista bara för att se hur designen ser ut
+    val fakeList = remember { mutableStateListOf(
+        CartItem("Exempelvara 1", "123456", 2),
+        CartItem("Exempelvara 2", "789012", 1)
+    )}
+
+    OrderScreen(navController = navController, cartItems = fakeList)
 }
