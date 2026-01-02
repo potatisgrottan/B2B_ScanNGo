@@ -7,7 +7,7 @@ import androidx.camera.core.ImageProxy
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 
-// Denna klass ärver från ImageAnalysis.Analyzer
+// ärver från ImageAnalysis.Analyzer
 class BarcodeAnalyzer(
     private val onBarcodeDetected: (String) -> Unit
 ) : ImageAnalysis.Analyzer {

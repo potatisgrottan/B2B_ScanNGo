@@ -64,7 +64,7 @@ dependencies {
     implementation("com.google.accompanist:accompanist-permissions:0.34.0")
     // OBS: Om accompanist krånglar kan vi köra standard ActivityResultLauncher,
     // men jag visar den enkla vägen nedan utan accompanist för att hålla dependencies nere.
-
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.0")
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

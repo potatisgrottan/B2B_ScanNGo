@@ -4,16 +4,15 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.remember
+import androidx.lifecycle.viewmodel.compose.viewModel // VIKTIG IMPORT!
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.b2b_scanngo.model.CartItem
 import com.example.b2b_scanngo.repositroy.FakeProductRepo
 import com.example.b2b_scanngo.ui.screen.HomeScreen
 import com.example.b2b_scanngo.ui.screen.OrderScreen
 import com.example.b2b_scanngo.ui.screen.ScanScreen
+import com.example.b2b_scanngo.viewModel.MainViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -27,9 +26,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
-
-    // 1. Vi skapar listan HÄR uppe så den lever så länge appen är igång
-    val cartItems = remember { mutableStateListOf<CartItem>() }
+    val viewModel: MainViewModel = viewModel()
 
     NavHost(navController = navController, startDestination = "home") {
 
@@ -38,34 +35,22 @@ fun AppNavigation() {
         }
 
         composable("order") {
-            // 2. Vi skickar listan TILL OrderScreen så den kan visa den
-            OrderScreen(navController, cartItems)
+            // Vi skickar listan från ViewModeln
+            OrderScreen(navController, viewModel.cartItems)
         }
 
         composable("scan") {
-            // 3. Vi skickar en funktion till ScanScreen: "Vad ska hända när vi hittar en kod?"
             ScanScreen(navController) { eanCode ->
 
-                // HÄR SKER "API-ANROPET"
                 val productName = FakeProductRepo.getProductByEan(eanCode)
 
                 if (productName != null) {
-                    // Kolla om varan redan finns i listan
-                    val existingItem = cartItems.find { it.ean == eanCode }
-
-                    if (existingItem != null) {
-                        // Om den finns, öka antal
-                        existingItem.quantity++
-                    } else {
-                        // Om den är ny, lägg till i listan
-                        cartItems.add(CartItem(productName, eanCode, 1))
-                    }
-                    return@ScanScreen true // Det lyckades!
+                    viewModel.addProduct(eanCode, productName)
+                    return@ScanScreen true
                 } else {
-                    return@ScanScreen false // Produkten fanns inte
+                    return@ScanScreen false
                 }
             }
         }
     }
-
 }
