@@ -1,56 +1,35 @@
 package com.example.b2b_scanngo
 
+import android.Manifest
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.runtime.Composable
-import androidx.lifecycle.viewmodel.compose.viewModel // VIKTIG IMPORT!
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import com.example.b2b_scanngo.repositroy.FakeProductRepo
-import com.example.b2b_scanngo.ui.screen.HomeScreen
-import com.example.b2b_scanngo.ui.screen.OrderScreen
-import com.example.b2b_scanngo.ui.screen.ScanScreen
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.app.ActivityCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.b2b_scanngo.viewModel.MainViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // 1. Fråga om lov för notifikationer (Android 13+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                101
+            )
+        }
+
         setContent {
-            AppNavigation()
-        }
-    }
-}
+            // 2. Skapa ViewModel och initiera NotificationHelper
+            val viewModel: MainViewModel = viewModel()
+            viewModel.initNotificationHelper(LocalContext.current)
 
-@Composable
-fun AppNavigation() {
-    val navController = rememberNavController()
-    val viewModel: MainViewModel = viewModel()
-
-    NavHost(navController = navController, startDestination = "home") {
-
-        composable("home") {
-            HomeScreen(navController)
-        }
-
-        composable("order") {
-            // Vi skickar listan från ViewModeln
-            OrderScreen(navController, viewModel.cartItems)
-        }
-
-        composable("scan") {
-            ScanScreen(navController) { eanCode ->
-
-                val productName = FakeProductRepo.getProductByEan(eanCode)
-
-                if (productName != null) {
-                    viewModel.addProduct(eanCode, productName)
-                    return@ScanScreen true
-                } else {
-                    return@ScanScreen false
-                }
-            }
+            // 3. Starta appens navigering
+            AppNavigation(viewModel)
         }
     }
 }
