@@ -56,12 +56,17 @@ fun LoginScreen(
             CircularProgressIndicator()
         } else {
             // LOGGA IN KNAPP
+// Inuti LoginScreen-kolumnen
             Button(
                 onClick = {
-                    isLoading = true
-                    viewModel.signIn(email, password) {
-                        isLoading = false
-                        onLoginSuccess()
+                    if (email.isNotEmpty() && password.isNotEmpty()) {
+                        isLoading = true
+                        viewModel.signIn(email, password) {
+                            isLoading = false
+                            onLoginSuccess()
+                        }
+                    } else {
+                        // Sätt ett lokalt felmeddelande eller använd ViewModels authError
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(50.dp)
@@ -71,13 +76,17 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // REGISTRERA KNAPP (Ny!)
             TextButton(
                 onClick = {
-                    isLoading = true
-                    viewModel.signUp(email, password) {
+                    if (email.isNotEmpty() && password.isNotEmpty()) {
+                        isLoading = true
+                        viewModel.signUp(email, password) {
+                            isLoading = false
+                            onLoginSuccess()
+                        }
+                    } else {
+                        // Om fälten är tomma, stanna direkt här
                         isLoading = false
-                        onLoginSuccess()
                     }
                 }
             ) {
