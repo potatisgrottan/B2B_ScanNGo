@@ -4,6 +4,7 @@ data class Order(
     val id: String,
     val items: List<CartItem>,
     val totalPrice: Int,
+    val deliveryAddress: WarehouseLocation,
     var status: OrderStatus = OrderStatus.PLACED,
     val timestamp: Long = System.currentTimeMillis()
 )
