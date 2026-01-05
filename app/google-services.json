@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "499756890894",
+    "project_id": "scanngo-d4b8e",
+    "storage_bucket": "scanngo-d4b8e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:499756890894:android:66ba053f69ba1a8667f55f",
+        "android_client_info": {
+          "package_name": "com.example.b2b_scanngo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD32m3PddhFLNN0J3XKxW_PIIyowwRHaaw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
