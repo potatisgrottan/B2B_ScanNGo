@@ -19,7 +19,7 @@ fun AppNavigation(viewModel: MainViewModel) {
 
         // --- LOGIN SCREEN ---
         composable("login") {
-            LoginScreen(viewModel) {
+            LoginScreen(viewModel, navController) {
                 // Vid lyckad inloggning, rensa backstack så man inte kan backa till login
                 navController.navigate("home") {
                     popUpTo("login") { inclusive = true }

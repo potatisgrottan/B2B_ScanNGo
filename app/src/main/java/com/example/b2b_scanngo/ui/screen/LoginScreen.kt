@@ -9,11 +9,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import com.example.b2b_scanngo.AppNavigation
 import com.example.b2b_scanngo.viewModel.MainViewModel
 
 @Composable
 fun LoginScreen(
     viewModel: MainViewModel,
+    navController: NavController,
     onLoginSuccess: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
@@ -91,6 +94,12 @@ fun LoginScreen(
                 }
             ) {
                 Text("Inget konto? Registrera dig här")
+            }
+
+            TextButton(
+                onClick = { navController.navigate("order") }
+            ){
+                Text("Anonymous")
             }
         }
     }
