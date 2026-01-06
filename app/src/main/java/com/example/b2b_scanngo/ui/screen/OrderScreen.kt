@@ -4,6 +4,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+//import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,8 +28,6 @@ fun OrderScreen(
 ) {
     val cartItems = viewModel.cartItems
     val currentTotal = cartItems.sumOf { it.price * it.quantity }
-
-    // State for the dropdown menu
     var expanded by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -38,12 +40,18 @@ fun OrderScreen(
         // Cart List
         LazyColumn(
             modifier = Modifier
-                .weight(1.5f) // Adjusted weight to make room for the picker
+                .weight(1.5f)
                 .fillMaxWidth()
                 .background(Color(0xFFF5F5F5))
         ) {
             items(cartItems) { item ->
-                CartItemRow(item)
+                // Här skickar vi med funktionerna till raden
+                CartItemRow(
+                    item = item,
+                    onIncrease = { viewModel.increaseQuantity(item) },
+                    onDecrease = { viewModel.decreaseQuantity(item) },
+                    onRemove = { viewModel.removeItem(item) }
+                )
             }
         }
 
@@ -60,7 +68,6 @@ fun OrderScreen(
                 color = Color.Gray
             )
 
-            // Material 3 Dropdown Menu
             ExposedDropdownMenuBox(
                 expanded = expanded,
                 onExpandedChange = { expanded = !expanded },
@@ -98,7 +105,6 @@ fun OrderScreen(
                 }
             }
         }
-        // --- END ADDRESS PICKER ---
 
         // Summering och Knappar
         Column(
@@ -128,7 +134,7 @@ fun OrderScreen(
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(50.dp),
-                enabled = cartItems.isNotEmpty(), // Disable button if cart is empty
+                enabled = cartItems.isNotEmpty(),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
             ) {
                 Text("LÄGG BESTÄLLNING")
@@ -138,24 +144,57 @@ fun OrderScreen(
 }
 
 @Composable
-fun CartItemRow(item: CartItem) {
-    // Note: In a real app, use viewModel functions to change qty
+fun CartItemRow(
+    item: CartItem,
+    onIncrease: () -> Unit,
+    onDecrease: () -> Unit,
+    onRemove: () -> Unit
+) {
     Card(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
         Row(
             modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            // Vänster sida: Info
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = item.name, style = MaterialTheme.typography.titleMedium)
-                Text(text = "Antal: ${item.quantity} st", style = MaterialTheme.typography.bodyMedium)
                 Text(text = "${item.price} kr/st", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                Text(
+                    text = "${item.price * item.quantity} kr",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
-            Text(
-                text = "${item.price * item.quantity} kr",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.primary
-            )
+
+            // Höger sida: Knappar (+ - Trash)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // MINUS
+                IconButton(onClick = onDecrease) {
+                  
+                    Text(text = "-", fontSize = 30.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                }
+
+                // ANTAL
+                Text(
+                    text = "${item.quantity}",
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                )
+
+                // PLUS
+                IconButton(onClick = onIncrease) {
+                    Icon(imageVector = Icons.Default.Add, contentDescription = "Öka")
+                }
+
+                // DELETE (Röd färg)
+                IconButton(onClick = onRemove) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Ta bort",
+                        tint = Color.Red
+                    )
+                }
+            }
         }
     }
 }

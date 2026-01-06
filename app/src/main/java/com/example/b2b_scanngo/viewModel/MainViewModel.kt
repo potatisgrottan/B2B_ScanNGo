@@ -2,7 +2,6 @@ package com.example.b2b_scanngo.viewModel
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.location.Location
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -11,7 +10,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.b2b_scanngo.model.*
 import com.example.b2b_scanngo.repositroy.FakeProductRepo
-import com.google.firebase.auth.FirebaseAuth // Viktig import!
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -35,7 +34,7 @@ class MainViewModel : ViewModel() {
         notificationHelper = NotificationHelper(context)
     }
 
-    // --- Auth Funktioner ---
+    // --- Auth Funktioner (Samma som förut) ---
     fun signIn(email: String, pass: String, onSuccess: () -> Unit) {
         auth.signInWithEmailAndPassword(email, pass)
             .addOnSuccessListener {
@@ -49,12 +48,10 @@ class MainViewModel : ViewModel() {
     }
 
     fun signUp(email: String, pass: String, onSuccess: () -> Unit) {
-        // Validering för att stoppa kraschen
         if (email.isBlank() || pass.isBlank()) {
             authError = "E-post och lösenord får inte vara tomma"
             return
         }
-
         auth.createUserWithEmailAndPassword(email, pass)
             .addOnSuccessListener {
                 currentUser = it.user
@@ -62,7 +59,6 @@ class MainViewModel : ViewModel() {
                 onSuccess()
             }
             .addOnFailureListener {
-                // Här fångas fel som t.ex. för kort lösenord eller ogiltig e-post
                 authError = "Registrering misslyckades: ${it.localizedMessage}"
             }
     }
@@ -73,13 +69,43 @@ class MainViewModel : ViewModel() {
     }
 
     // --- Order & Produkter ---
+
     fun addProduct(ean: String, info: Product) {
-        val existingItem = cartItems.find { it.ean == ean }
-        if (existingItem != null) {
-            existingItem.quantity++
+        val index = cartItems.indexOfFirst { it.ean == ean }
+        if (index != -1) {
+            // Vi använder copy() för att tvinga UI att uppdateras
+            val currentItem = cartItems[index]
+            cartItems[index] = currentItem.copy(quantity = currentItem.quantity + 1)
         } else {
             cartItems.add(CartItem(info.name, ean, info.price, 1))
         }
+    }
+
+    // NY FUNKTION: Öka antal
+    fun increaseQuantity(item: CartItem) {
+        val index = cartItems.indexOf(item)
+        if (index != -1) {
+            val current = cartItems[index]
+            cartItems[index] = current.copy(quantity = current.quantity + 1)
+        }
+    }
+
+    // NY FUNKTION: Minska antal (ta bort om 0)
+    fun decreaseQuantity(item: CartItem) {
+        val index = cartItems.indexOf(item)
+        if (index != -1) {
+            val current = cartItems[index]
+            if (current.quantity > 1) {
+                cartItems[index] = current.copy(quantity = current.quantity - 1)
+            } else {
+                removeItem(item)
+            }
+        }
+    }
+
+    // NY FUNKTION: Ta bort helt
+    fun removeItem(item: CartItem) {
+        cartItems.remove(item)
     }
 
     fun placeOrder() {
@@ -87,14 +113,12 @@ class MainViewModel : ViewModel() {
 
         val totalSum = cartItems.sumOf { it.price * it.quantity }
 
-        // Vi skapar en order som nu är kopplad till användarens e-post för "Security/Auth"
         val newOrder = Order(
             id = UUID.randomUUID().toString().substring(0, 8).uppercase(),
-            items = cartItems.toList(),
+            items = cartItems.toList(), // Kopia av listan just nu
             totalPrice = totalSum,
             deliveryAddress = selectedLocation,
             status = OrderStatus.PLACED,
-            // Du kan lägga till 'userEmail = currentUser?.email ?: "Gäst"' i din Order-modell
         )
 
         orderHistory.add(0, newOrder)

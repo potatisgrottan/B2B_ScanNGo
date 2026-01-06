@@ -4,7 +4,7 @@ import com.example.b2b_scanngo.model.Product
 import com.example.b2b_scanngo.model.WarehouseLocation
 
 object FakeProductRepo { // Keep this name so AppNavigation doesn't break
-    val suppliers = listOf("TechLogistics AB", "Global Foods Corp", "Industrial Supplies Ltd")
+    val suppliers = listOf("TechLogistics AB", "Global Foods Corp", "Industrial Supplies Ltd", "Vicks")
 
     val warehouseLocations = listOf(
         WarehouseLocation("LOC1", "Lastkaj Nord", "Industrivägen 1", 1),
@@ -14,6 +14,7 @@ object FakeProductRepo { // Keep this name so AppNavigation doesn't break
 
     private val productDatabase = listOf(
         Product("7310532109090", "Barilla Spaghetti", 20, suppliers[1], "Food"),
+        Product("4030300022248", "Double Action, menthol, Sugar Free halstabletter", 25, suppliers[3], "Food"),
         Product("123456", "Safety Vest XL", 150, suppliers[2], "Safety")
     )
 
