@@ -1,12 +1,13 @@
 package com.example.b2b_scanngo.viewModel
 
 import android.annotation.SuppressLint
+import android.app.Application
 import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.b2b_scanngo.model.*
 import com.example.b2b_scanngo.repositroy.FakeProductRepo
@@ -15,7 +16,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.UUID
 
-class MainViewModel : ViewModel() {
+// CHANGED: Inherit form AndroidViewModel to get 'application' context for Database
+class MainViewModel(application: Application) : AndroidViewModel(application) {
+
+    // --- Room Database Setup ---
+    private val db = AppDatabase.getDatabase(application)
+    private val cartDao = db.cartDao()
 
     // --- Firebase Auth ---
     private val auth = FirebaseAuth.getInstance()
@@ -23,6 +29,7 @@ class MainViewModel : ViewModel() {
     var authError by mutableStateOf<String?>(null)
 
     // --- Lager & Order ---
+    // This list will now automatically sync with the Database
     val cartItems = mutableStateListOf<CartItem>()
     val orderHistory = mutableStateListOf<Order>()
     var selectedLocation by mutableStateOf(FakeProductRepo.warehouseLocations[0])
@@ -30,11 +37,21 @@ class MainViewModel : ViewModel() {
     @SuppressLint("StaticFieldLeak")
     private var notificationHelper: NotificationHelper? = null
 
+    init {
+        // Start listening to the Database immediately
+        viewModelScope.launch {
+            cartDao.getAllItems().collect { items ->
+                cartItems.clear()
+                cartItems.addAll(items)
+            }
+        }
+    }
+
     fun initNotificationHelper(context: Context) {
         notificationHelper = NotificationHelper(context)
     }
 
-    // --- Auth Funktioner (Samma som förut) ---
+    // --- Auth Funktioner ---
     fun signIn(email: String, pass: String, onSuccess: () -> Unit) {
         auth.signInWithEmailAndPassword(email, pass)
             .addOnSuccessListener {
@@ -68,44 +85,55 @@ class MainViewModel : ViewModel() {
         currentUser = null
     }
 
-    // --- Order & Produkter ---
+    // --- Order & Produkter (UPDATED FOR ROOM) ---
 
     fun addProduct(ean: String, info: Product) {
-        val index = cartItems.indexOfFirst { it.ean == ean }
-        if (index != -1) {
-            // Vi använder copy() för att tvinga UI att uppdateras
-            val currentItem = cartItems[index]
-            cartItems[index] = currentItem.copy(quantity = currentItem.quantity + 1)
-        } else {
-            cartItems.add(CartItem(info.name, ean, info.price, 1))
-        }
-    }
-
-    // NY FUNKTION: Öka antal
-    fun increaseQuantity(item: CartItem) {
-        val index = cartItems.indexOf(item)
-        if (index != -1) {
-            val current = cartItems[index]
-            cartItems[index] = current.copy(quantity = current.quantity + 1)
-        }
-    }
-
-    // NY FUNKTION: Minska antal (ta bort om 0)
-    fun decreaseQuantity(item: CartItem) {
-        val index = cartItems.indexOf(item)
-        if (index != -1) {
-            val current = cartItems[index]
-            if (current.quantity > 1) {
-                cartItems[index] = current.copy(quantity = current.quantity - 1)
+        viewModelScope.launch {
+            // Check if item exists in list
+            val existing = cartItems.find { it.ean == ean }
+            if (existing != null) {
+                // Update DB
+                cartDao.insertOrUpdate(existing.copy(quantity = existing.quantity + 1))
             } else {
-                removeItem(item)
+                // Insert new into DB
+                cartDao.insertOrUpdate(CartItem(info.name, ean, info.price, 1))
             }
         }
     }
 
-    // NY FUNKTION: Ta bort helt
+    fun increaseQuantity(item: CartItem) {
+        viewModelScope.launch {
+            cartDao.insertOrUpdate(item.copy(quantity = item.quantity + 1))
+        }
+    }
+
+    fun decreaseQuantity(item: CartItem) {
+        viewModelScope.launch {
+            if (item.quantity > 1) {
+                cartDao.insertOrUpdate(item.copy(quantity = item.quantity - 1))
+            } else {
+                cartDao.delete(item)
+            }
+        }
+    }
+
     fun removeItem(item: CartItem) {
-        cartItems.remove(item)
+        viewModelScope.launch {
+            cartDao.delete(item)
+        }
+    }
+
+    // --- NEW FEATURE: Re-order ---
+    fun reOrder(order: Order) {
+        viewModelScope.launch {
+            // 1. Clear current cart
+            cartDao.clearCart()
+
+            // 2. Add all items from history to DB
+            order.items.forEach { item ->
+                cartDao.insertOrUpdate(item)
+            }
+        }
     }
 
     fun placeOrder() {
@@ -115,14 +143,19 @@ class MainViewModel : ViewModel() {
 
         val newOrder = Order(
             id = UUID.randomUUID().toString().substring(0, 8).uppercase(),
-            items = cartItems.toList(), // Kopia av listan just nu
+            items = cartItems.toList(),
             totalPrice = totalSum,
             deliveryAddress = selectedLocation,
             status = OrderStatus.PLACED,
         )
 
         orderHistory.add(0, newOrder)
-        cartItems.clear()
+
+        // IMPORTANT: Clear the offline database after placing order
+        viewModelScope.launch {
+            cartDao.clearCart()
+        }
+
         simulateDeliveryProcess(newOrder.id)
     }
 

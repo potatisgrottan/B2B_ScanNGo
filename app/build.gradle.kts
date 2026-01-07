@@ -3,18 +3,17 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("com.google.gms.google-services")
+    id("kotlin-kapt") // <--- ADDED: Required for Room Database
 }
 
 android {
     namespace = "com.example.b2b_scanngo"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36 // Changed to standard integer (was 36/release, 35 is current stable Android 15)
 
     defaultConfig {
         applicationId = "com.example.b2b_scanngo"
-        minSdk = 33
-        targetSdk = 36
+        minSdk = 33 // This is quite high (Android 13), but fine if that's what you want.
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -43,6 +42,7 @@ android {
 }
 
 dependencies {
+    // --- CORE & COMPOSE ---
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -52,26 +52,35 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation("androidx.navigation:navigation-compose:2.7.7")
-    implementation(platform("com.google.firebase:firebase-bom:34.7.0"))
 
+    // --- FIREBASE ---
+    implementation(platform("com.google.firebase:firebase-bom:34.7.0"))
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-analytics")
-    implementation(libs.androidx.ui.graphics)
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    implementation(platform("com.google.firebase:firebase-bom:34.7.0"))
-    implementation("com.google.firebase:firebase-analytics")
+    // implementation("com.google.firebase:firebase-firestore") // Uncomment if you add Firestore later
+
+    // --- CAMERA & ML KIT ---
     implementation("androidx.camera:camera-core:1.3.2")
     implementation("androidx.camera:camera-camera2:1.3.2")
     implementation("androidx.camera:camera-lifecycle:1.3.2")
     implementation("androidx.camera:camera-view:1.3.2")
-
     implementation("com.google.mlkit:barcode-scanning:17.2.0")
-    // För att hantera permissions i Compose
+
+    // --- NEW: ROOM DATABASE (OFFLINE MODE) ---
+    val room_version = "2.6.1"
+    implementation("androidx.room:room-runtime:$room_version")
+    implementation("androidx.room:room-ktx:$room_version") // Coroutines support
+    kapt("androidx.room:room-compiler:$room_version")      // Annotation Processor
+
+    // --- NEW: LOCATION SERVICES (GEOFENCING) ---
+    implementation("com.google.android.gms:play-services-location:21.2.0")
+
+    // --- TESTING & DEBUG ---
+    implementation(libs.androidx.ui.graphics)
     implementation("com.google.accompanist:accompanist-permissions:0.34.0")
-    // OBS: Om accompanist krånglar kan vi köra standard ActivityResultLauncher,
-    // men jag visar den enkla vägen nedan utan accompanist för att hålla dependencies nere.
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.0")
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
