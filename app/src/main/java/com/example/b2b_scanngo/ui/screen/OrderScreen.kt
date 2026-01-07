@@ -157,7 +157,8 @@ fun CartItemRow(
         ) {
             // Vänster sida: Info
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = item.name, style = MaterialTheme.typography.titleMedium)
+                Text(text = item.ean, style = MaterialTheme.typography.titleMedium)
+                Text(text= item.name, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                 Text(text = "${item.price} kr/st", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                 Text(
                     text = "${item.price * item.quantity} kr",
